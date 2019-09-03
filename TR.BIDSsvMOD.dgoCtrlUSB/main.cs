@@ -16,6 +16,7 @@ namespace TR.BIDSsvMOD.dgoCtrlUSB
     int? ATCPnlInd = null;
     double MultiplNum = 0;
     bool isPBExc = false;
+    bool isInv = false;
 
     public bool Connect(in string args)
     {
@@ -43,6 +44,9 @@ namespace TR.BIDSsvMOD.dgoCtrlUSB
                 case "pbexc":
                   isPBExc = true;
                   break;
+                case "inv":
+                  isInv = true;
+                  break;
               }
             }
           }
@@ -64,15 +68,18 @@ namespace TR.BIDSsvMOD.dgoCtrlUSB
         for (int i = 0; i < e.Data.Length; i++) s += e.Data[i].ToString() + " ";
         Console.WriteLine("{0} << {1}", Name, s);
       }
+
       if (e.Data[0] != 0xff)
       {
         int BNum = (int)Math.Round(e.Data[0] / 28.0, MidpointRounding.AwayFromZero) - 1;
+        if (isInv) BNum = BHandleMAX - BNum;
         if (isPBExc) Common.PowerNotchNum = BNum;
         else Common.BrakeNotchNum = BNum >= BHandleMAX ? 99 : BNum;
       }
       if (e.Data[1] != 0xff)
       {
         int PNum = (int)Math.Round(e.Data[1] / 18.0, MidpointRounding.AwayFromZero) - 1;
+        if (isInv) PNum = PHandleMAX - PNum;
         if (isPBExc) Common.BrakeNotchNum = PNum >= PHandleMAX ? 99 : PNum;
         else Common.PowerNotchNum = PNum;
       }
@@ -186,7 +193,8 @@ namespace TR.BIDSsvMOD.dgoCtrlUSB
         " -a : (atc) set the atc panel number (default : null)" +
         " -m : (magnification) set the magnification number that multiply with ATC Panel value"+
         " -n : (name) set the name of this connection"+
-        " -pbexc : (Power / Brake Exchange) Exchange roles of Power Handle and Brake Handle");
+        " -pbexc : (Power / Brake Exchange) Exchange roles of Power Handle and Brake Handle"+
+        " -inv : (inverse) Inverse the Handle Position Counting");
     }
   }
 }
