@@ -28,18 +28,18 @@ namespace TR.BIDSsvMOD.dgoCtrlUSB
           string[] saa = sa[i].Split(':');
           try
           {
-            if (saa.Length > 1)
+            if (saa.Length >= 1)
             {
               switch (saa[0])
               {
                 case "a":
-                  ATCPnlInd = int.Parse(saa[1]);
+                  if (saa.Length > 1) ATCPnlInd = int.Parse(saa[1]);
                   break;
                 case "m":
-                  MultiplNum = double.Parse(saa[1]);
+                  if (saa.Length > 1) MultiplNum = double.Parse(saa[1]);
                   break;
                 case "n":
-                  Name = saa[1];
+                  if (saa.Length > 1) Name = saa[1];
                   break;
                 case "pbexc":
                   isPBExc = true;
