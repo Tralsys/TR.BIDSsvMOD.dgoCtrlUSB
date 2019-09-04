@@ -8,8 +8,9 @@
     <Description>communication with D-GO Controller</Description>
     <Copyright>Copyright 2019 Tetsu Otter</Copyright>
     <AssemblyName>TR.BIDSsvMOD.dgoctrlusb</AssemblyName>
-    <AssemblyVersion>1.0.0.2</AssemblyVersion>
-    <FileVersion>1.0.0.2</FileVersion>
+    <AssemblyVersion>1.0.1.0</AssemblyVersion>
+    <FileVersion>1.0.1.0</FileVersion>
+    <Version>1.0.1</Version>
   </PropertyGroup>
 
   <ItemGroup>

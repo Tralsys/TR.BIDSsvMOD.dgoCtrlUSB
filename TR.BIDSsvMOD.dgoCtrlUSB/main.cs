@@ -6,12 +6,12 @@ namespace TR.BIDSsvMOD.dgoCtrlUSB
 {
   public class main : IBIDSsv
   {
-    public int Version => 100;
+    public int Version => 101;
     public string Name { get; set; } = "dgoc2bids";
     public bool IsDebug { get; set; } = false;
 
-    const int PHandleMAX = 13;
-    const int BHandleMAX = 8;
+    int PHandleMAX = 13;
+    int BHandleMAX = 8;
 
     int? ATCPnlInd = null;
     double MultiplNum = 0;
@@ -55,8 +55,32 @@ namespace TR.BIDSsvMOD.dgoCtrlUSB
       }
 
       
-      usbcom.Connect(usbcom.DeviceNameList.TCPP20011);
+      usbcom.Connect();
       usbcom.DataGot += Usbcom_DataGot;
+
+      switch (usbcom.DevType)
+      {
+        case usbcom.DeviceNameList.shinkansen:
+          PHandleMAX = 13;
+          BHandleMAX = 8;
+          break;
+        case usbcom.DeviceNameList.type2:
+          PHandleMAX = 5;
+          BHandleMAX = 9;
+          break;
+        case usbcom.DeviceNameList.ryojo:
+          //PHandleMAX = 13;
+          //BHandleMAX = 8;
+          break;
+        case usbcom.DeviceNameList.mtc_p5b8:
+          PHandleMAX = 5;
+          BHandleMAX = 8;
+          break;
+        case usbcom.DeviceNameList.mtc_p5b6:
+          PHandleMAX = 5;
+          BHandleMAX = 6;
+          break;
+      }
       return true;
     }
 
@@ -69,23 +93,39 @@ namespace TR.BIDSsvMOD.dgoCtrlUSB
         Console.WriteLine("{0} << {1}", Name, s);
       }
 
-      if (e.Data[0] != 0xff)
+      int? BNum = BNumGet(e.Data, usbcom.DevType);
+      if (BNum != null) 
       {
-        int BNum = (int)Math.Round(e.Data[0] / 28.0, MidpointRounding.AwayFromZero) - 1;
-        if (isInv) BNum = BHandleMAX - BNum;
-        if (isPBExc) Common.PowerNotchNum = BNum;
-        else Common.BrakeNotchNum = BNum >= BHandleMAX ? 99 : BNum;
+        int b = (int)BNum;
+        if (isInv) b = BHandleMAX - b;
+        if (isPBExc) Common.PowerNotchNum = b;
+        else Common.BrakeNotchNum = b >= BHandleMAX ? 255 : b;
       }
-      if (e.Data[1] != 0xff)
+
+      int? PNum = PNumGet(e.Data, usbcom.DevType);
+      if (PNum != null)
       {
-        int PNum = (int)Math.Round(e.Data[1] / 18.0, MidpointRounding.AwayFromZero) - 1;
-        if (isInv) PNum = PHandleMAX - PNum;
-        if (isPBExc) Common.BrakeNotchNum = PNum >= PHandleMAX ? 99 : PNum;
-        else Common.PowerNotchNum = PNum;
+        int p = (int)PNum;
+        if (isInv) p = PHandleMAX - p;
+        if (isPBExc) Common.BrakeNotchNum = p >= PHandleMAX ? 255 : p;
+        else Common.PowerNotchNum = p;
       }
 
       bool[] keyState = Common.Ctrl_Key;
-      keyState[0] = e.Data[2] != 0xff;//Horn SW
+      CtrlerKeys cKeys = KeyStateGet(e.Data, usbcom.DevType);
+
+      keyState[0] = cKeys.Horn | cKeys.A;//Horn SW
+      keyState[1] = cKeys.APlus;
+      keyState[4] = cKeys.S;//S Space
+      keyState[5] = cKeys.Start;//A1 Ins
+      keyState[6] = cKeys.Select;//A2 Del
+      keyState[7] = cKeys.B;//B1 Home
+      keyState[8] = cKeys.C;//B2 End
+      keyState[9] = cKeys.Right;//C1 PUp
+      keyState[10] = cKeys.Left;//C2 PDwn
+      keyState[11] = cKeys.D;//D D2
+
+
       byte buf = e.Data[4];
       keyState[8] = (buf & 1) == 1;
       keyState[7] = ((buf >>= 1) & 1) == 1;
@@ -94,25 +134,123 @@ namespace TR.BIDSsvMOD.dgoCtrlUSB
       keyState[9] = ((buf >>= 1) & 1) == 1;
       keyState[4] = ((buf >>= 1) & 1) == 1;
 
-      keyState[10] = false;
-      keyState[11] = false;
-      switch (e.Data[3] / 2)
-      {
-        case 0://^
-          Common.ReverserNum = Common.ReverserNum == 1 ? 0 : 1;
-          break;
-        case 1://->
-          keyState[10] = true;
-          break;
-        case 2://V
-          Common.ReverserNum = Common.ReverserNum == -1 ? 0 : -1;
-          break;
-        case 3://<-
-          keyState[11] = true;
-          break;
-      }
+      int RNum = Common.ReverserNum;
+      int rrec = RNum;
+      if (cKeys.Up & cKeys.Down)
+        RNum = 0;
+      else if(cKeys.Up)
+        RNum = RNum == 1 ? 0 : 1;
+      else if(cKeys.Down)
+        RNum = RNum == -1 ? 0 : -1;
+
+      RNum = RNumGet(e.Data, usbcom.DevType) ?? RNum;
+
+      if (RNum != rrec)
+        Common.ReverserNum = RNum;
 
       Common.Ctrl_Key = keyState;
+    }
+
+    private int? PNumGet(in byte[] ba, usbcom.DeviceNameList devType)
+    {
+      switch (devType)
+      {
+        case usbcom.DeviceNameList.shinkansen:
+          if (ba[1] == 0xff) return null;
+          else return (int)Math.Round(ba[1] / 18.0, MidpointRounding.AwayFromZero) - 1;
+        case usbcom.DeviceNameList.type2:
+          PHandleMAX = 5;
+          BHandleMAX = 9;
+          break;
+        case usbcom.DeviceNameList.ryojo:
+          //PHandleMAX = 13;
+          //BHandleMAX = 8;
+          break;
+        case usbcom.DeviceNameList.mtc_p5b8:
+          PHandleMAX = 5;
+          BHandleMAX = 8;
+          break;
+        case usbcom.DeviceNameList.mtc_p5b6:
+          PHandleMAX = 5;
+          BHandleMAX = 6;
+          break;
+      }
+      return 0;
+    }
+    private int? BNumGet(in byte[] ba, usbcom.DeviceNameList devType)
+    {
+      switch (devType)
+      {
+        case usbcom.DeviceNameList.shinkansen:
+          if (ba[0] == 0xff) return null;
+          else return (int)Math.Round(ba[0] / 28.0, MidpointRounding.AwayFromZero) - 1;
+        case usbcom.DeviceNameList.type2:
+          PHandleMAX = 5;
+          BHandleMAX = 9;
+          break;
+        case usbcom.DeviceNameList.ryojo:
+          //PHandleMAX = 13;
+          //BHandleMAX = 8;
+          break;
+        case usbcom.DeviceNameList.mtc_p5b8:
+          PHandleMAX = 5;
+          BHandleMAX = 8;
+          break;
+        case usbcom.DeviceNameList.mtc_p5b6:
+          PHandleMAX = 5;
+          BHandleMAX = 6;
+          break;
+      }
+      return 99;
+    }
+    private int? RNumGet(in byte[] ba, usbcom.DeviceNameList devType)
+    {
+      return null;
+    }
+    private CtrlerKeys KeyStateGet(in byte[] ba,usbcom.DeviceNameList devType)
+    {
+      switch (devType)
+      {
+        case usbcom.DeviceNameList.shinkansen:
+          return DGoKeyStateGet(ba);
+        case usbcom.DeviceNameList.type2:
+          return DGoKeyStateGet(ba);
+        case usbcom.DeviceNameList.ryojo:
+          return DGoKeyStateGet(ba);
+        case usbcom.DeviceNameList.mtc_p5b8:
+          return MTCKeyStateGet(ba);
+        case usbcom.DeviceNameList.mtc_p5b6:
+          return MTCKeyStateGet(ba);
+      }
+      return default;
+    }
+    private CtrlerKeys MTCKeyStateGet(in byte[] ba)
+    {
+      CtrlerKeys cKeys = new CtrlerKeys();
+      return cKeys;
+    }
+    private CtrlerKeys DGoKeyStateGet(in byte[] ba)
+    {
+      CtrlerKeys cKeys = new CtrlerKeys();
+
+      return cKeys;
+    }
+
+    public struct CtrlerKeys
+    {
+      public bool Start;
+      public bool Select;
+      public bool S;
+      public bool A;
+      public bool APlus;
+      public bool B;
+      public bool C;
+      public bool D;
+      public bool Up;
+      public bool Right;
+      public bool Down;
+      public bool Left;
+      public bool Horn;
     }
 
     public void Dispose()
@@ -126,6 +264,7 @@ namespace TR.BIDSsvMOD.dgoCtrlUSB
     short CurrentSPD = 0;
     short ATCSPD = 0;
     bool isDoorClosed = false;
+    bool isBIDSEnabled = false;
 
     public void OnBSMDChanged(in BIDSSharedMemoryData data)
     {
@@ -149,17 +288,31 @@ namespace TR.BIDSsvMOD.dgoCtrlUSB
       ba[2] = TenLEDSPDBar_print;//Door, Difference bet ATC/CurrSPD
       ba[3] = LEDBar;
 
-      ba[7] = (byte)Math.Floor((ATCSPD % 1000) / 100.0);
-      byte buf = (byte)Math.Floor((ATCSPD % 100) / 10.0);
-      buf <<= 4;
-      buf += (byte)(ATCSPD % 10);
-      ba[6] = buf;
+      if (isBIDSEnabled)
+      {
+        byte buf = 0;
+        if (ATCPnlInd == null)
+        {
+          ba[7] = 0xaa;
+          ba[6] = 0xaa;
+        }
+        else
+        {
+          ba[7] = (byte)Math.Floor((ATCSPD % 1000) / 100.0);
+          buf = (byte)Math.Floor((ATCSPD % 100) / 10.0);
+          buf <<= 4;
+          buf += (byte)(ATCSPD % 10);
+          ba[6] = buf;
+        }
 
-      ba[5] = (byte)Math.Floor((CurrentSPD % 1000) / 100.0);
-      buf = (byte)Math.Floor((CurrentSPD % 100) / 10.0);
-      buf <<= 4;
-      buf += (byte)(CurrentSPD % 10);
-      ba[4] = buf;
+        ba[5] = (byte)Math.Floor((CurrentSPD % 1000) / 100.0);
+        buf = (byte)Math.Floor((CurrentSPD % 100) / 10.0);
+        buf <<= 4;
+        buf += (byte)(CurrentSPD % 10);
+        ba[4] = buf;
+      }
+      else for (int i = 0; i < 8; i++) ba[i] = 0xaa;//Display Reset
+
 
       if (IsDebug)
       {
@@ -167,7 +320,7 @@ namespace TR.BIDSsvMOD.dgoCtrlUSB
         for (int i = 0; i < ba.Length; i++) s += ba[i].ToString() + " ";
         Console.WriteLine("{0} << {1}", Name, s);
       }
-      usbcom.SendCtrl(ba);
+      usbcom.SendCtrl(ba, true);
     }
 
     public void OnOpenDChanged(in OpenD data) { }

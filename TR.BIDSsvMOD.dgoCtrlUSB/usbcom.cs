@@ -11,20 +11,38 @@ namespace TR.BIDSsvMOD.dgoCtrlUSB
 
   class usbcom
   {
-    public static UsbDevice uDevice;
-    public static UsbDeviceFinder uDevFinder = new UsbDeviceFinder(0x0AE4, 0x0005);
+    static UsbDevice uDevice;
+    //static UsbDeviceFinder uDevFinder = new UsbDeviceFinder(0x0AE4, 0x0005);
+    static UsbDeviceFinder[] uDevFinder = new UsbDeviceFinder[8]
+    {
+      new UsbDeviceFinder(0x0AE4, 0x0005),//Shinkansen
+      new UsbDeviceFinder(0x0AE4, 0x0004),//type2
+      new UsbDeviceFinder(0x0AE4, 0x0006),//ryojo
+      new UsbDeviceFinder(0x0AE4, 0x0101),//mtc_p5b8
+      new UsbDeviceFinder(0x1C06, 0x77A7),//mtc_p5b6
+      new UsbDeviceFinder(0x0000, 0x0000),//mtc_p4b8
+      new UsbDeviceFinder(0x0000, 0x0000),//mtc_p4b8_tq
+      new UsbDeviceFinder(0x0000, 0x0000) //mtc_p13b8
+    };
+
 
     public enum DeviceNameList
     {
-      TCPP20011
+      None, shinkansen, type2, ryojo, mtc_p5b8, mtc_p5b6, mtc_p4b8, mtc_p4B8_tq, mtc_p13b8
     }
+
+    static public DeviceNameList DevType { get; private set; } = DeviceNameList.None;
     
-    public static void Connect(DeviceNameList dList)
+    public static void Connect()
     {
       try
       {
-        if((uDevice = UsbDevice.OpenUsbDevice(uDevFinder)) == null)
-          throw new Exception("Device Not Found");
+        for(int i = 0; i < (int)DeviceNameList.mtc_p5b6; i++)
+        {
+          uDevice = UsbDevice.OpenUsbDevice(uDevFinder[i]);
+          if (uDevice == null) continue;
+          DevType = (DeviceNameList)i + 1;
+        }
 
         IUsbDevice iuDev = uDevice as IUsbDevice;
         if (!ReferenceEquals(iuDev, null))
