@@ -8,11 +8,15 @@ namespace TR.BIDSsvMOD.dgoCtrlUSB
   {
     public int Version => 100;
     public string Name { get; set; } = "dgoc2bids";
-
     public bool IsDebug { get; set; } = false;
+
+    const int PHandleMAX = 13;
+    const int BHandleMAX = 8;
 
     int? ATCPnlInd = null;
     double MultiplNum = 0;
+    bool isPBExc = false;
+    bool isInv = false;
 
     public bool Connect(in string args)
     {
@@ -24,18 +28,24 @@ namespace TR.BIDSsvMOD.dgoCtrlUSB
           string[] saa = sa[i].Split(':');
           try
           {
-            if (saa.Length > 1)
+            if (saa.Length >= 1)
             {
               switch (saa[0])
               {
                 case "a":
-                  ATCPnlInd = int.Parse(saa[1]);
+                  if (saa.Length > 1) ATCPnlInd = int.Parse(saa[1]);
                   break;
                 case "m":
-                  MultiplNum = double.Parse(saa[1]);
+                  if (saa.Length > 1) MultiplNum = double.Parse(saa[1]);
                   break;
                 case "n":
-                  Name = saa[1];
+                  if (saa.Length > 1) Name = saa[1];
+                  break;
+                case "pbexc":
+                  isPBExc = true;
+                  break;
+                case "inv":
+                  isInv = true;
                   break;
               }
             }
@@ -58,13 +68,21 @@ namespace TR.BIDSsvMOD.dgoCtrlUSB
         for (int i = 0; i < e.Data.Length; i++) s += e.Data[i].ToString() + " ";
         Console.WriteLine("{0} << {1}", Name, s);
       }
+
       if (e.Data[0] != 0xff)
       {
         int BNum = (int)Math.Round(e.Data[0] / 28.0, MidpointRounding.AwayFromZero) - 1;
-        Common.BrakeNotchNum = BNum >= 8 ? 99 : BNum;
+        if (isInv) BNum = BHandleMAX - BNum;
+        if (isPBExc) Common.PowerNotchNum = BNum;
+        else Common.BrakeNotchNum = BNum >= BHandleMAX ? 99 : BNum;
       }
       if (e.Data[1] != 0xff)
-        Common.PowerNotchNum = (int)Math.Round(e.Data[1] / 18.0, MidpointRounding.AwayFromZero) - 1;
+      {
+        int PNum = (int)Math.Round(e.Data[1] / 18.0, MidpointRounding.AwayFromZero) - 1;
+        if (isInv) PNum = PHandleMAX - PNum;
+        if (isPBExc) Common.BrakeNotchNum = PNum >= PHandleMAX ? 99 : PNum;
+        else Common.PowerNotchNum = PNum;
+      }
 
       bool[] keyState = Common.Ctrl_Key;
       keyState[0] = e.Data[2] != 0xff;//Horn SW
@@ -174,7 +192,9 @@ namespace TR.BIDSsvMOD.dgoCtrlUSB
       Console.WriteLine("communicate with dgocon\n" +
         " -a : (atc) set the atc panel number (default : null)" +
         " -m : (magnification) set the magnification number that multiply with ATC Panel value"+
-        " -n : (name) set the name of this connection");
+        " -n : (name) set the name of this connection"+
+        " -pbexc : (Power / Brake Exchange) Exchange roles of Power Handle and Brake Handle"+
+        " -inv : (inverse) Inverse the Handle Position Counting");
     }
   }
 }
