@@ -17,7 +17,7 @@ namespace TR.BIDSsvMOD.dgoCtrlUSB
     {
       new UsbDeviceFinder(0x0AE4, 0x0004),//type2
       new UsbDeviceFinder(0x0AE4, 0x0005),//Shinkansen
-      new UsbDeviceFinder(0x0AE4, 0x0006),//ryojo
+      new UsbDeviceFinder(0x0AE4, 0x0007),//ryojo
       new UsbDeviceFinder(0x0AE4, 0x0101),//mtc_p5b8
       new UsbDeviceFinder(0x1C06, 0x77A7),//mtc_p5b6
       new UsbDeviceFinder(0x0000, 0x0000),//mtc_p4b8
