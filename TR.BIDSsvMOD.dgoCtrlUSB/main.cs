@@ -4,7 +4,7 @@ using TR.BIDSsv;
 
 namespace TR.BIDSsvMOD.dgoCtrlUSB
 {
-  public class main : IBIDSsv
+  public class Main : IBIDSsv
   {
     public int Version => 101;
     public string Name { get; set; } = "dgoc2bids";
@@ -17,7 +17,7 @@ namespace TR.BIDSsvMOD.dgoCtrlUSB
     double MultiplNum = 0;
     bool isPBExc = false;
     bool isInv = false;
-
+    bool PCap = false;
     public bool Connect(in string args)
     {
       string[] sa = args.Replace(" ", string.Empty).Split(new string[2] { "-", "/" }, StringSplitOptions.RemoveEmptyEntries);
@@ -47,6 +47,9 @@ namespace TR.BIDSsvMOD.dgoCtrlUSB
                 case "inv":
                   isInv = true;
                   break;
+                case "pcap":
+                  PCap = true;
+                  break;
               }
             }
           }
@@ -55,28 +58,28 @@ namespace TR.BIDSsvMOD.dgoCtrlUSB
       }
 
       
-      usbcom.Connect();
-      usbcom.DataGot += Usbcom_DataGot;
+      Usbcom.Connect();
+      Usbcom.DataGot += Usbcom_DataGot;
 
-      switch (usbcom.DevType)
+      switch (Usbcom.DevType)
       {
-        case usbcom.DeviceNameList.shinkansen:
+        case Usbcom.DeviceNameList.shinkansen:
           PHandleMAX = 13;
           BHandleMAX = 8;
           break;
-        case usbcom.DeviceNameList.type2:
+        case Usbcom.DeviceNameList.type2:
           PHandleMAX = 5;
           BHandleMAX = 9;
           break;
-        case usbcom.DeviceNameList.ryojo:
+        case Usbcom.DeviceNameList.ryojo:
           //PHandleMAX = 13;
           //BHandleMAX = 8;
           break;
-        case usbcom.DeviceNameList.mtc_p5b8:
+        case Usbcom.DeviceNameList.mtc_p5b8:
           PHandleMAX = 5;
           BHandleMAX = 8;
           break;
-        case usbcom.DeviceNameList.mtc_p5b6:
+        case Usbcom.DeviceNameList.mtc_p5b6:
           PHandleMAX = 5;
           BHandleMAX = 6;
           break;
@@ -84,16 +87,17 @@ namespace TR.BIDSsvMOD.dgoCtrlUSB
       return true;
     }
 
-    private void Usbcom_DataGot(object sender, usbcom.DataGotEvArgs e)
+    private void Usbcom_DataGot(object sender, Usbcom.DataGotEvArgs e)
     {
-      if (IsDebug)
+      if (IsDebug || PCap)
       {
         string s = string.Empty;
         for (int i = 0; i < e.Data.Length; i++) s += e.Data[i].ToString() + " ";
         Console.WriteLine("{0} << {1}", Name, s);
+        if (PCap) return;
       }
 
-      int? BNum = BNumGet(e.Data, usbcom.DevType);
+      int? BNum = BNumGet(e.Data, Usbcom.DevType);
       if (BNum != null) 
       {
         int b = (int)BNum;
@@ -102,7 +106,7 @@ namespace TR.BIDSsvMOD.dgoCtrlUSB
         else Common.BrakeNotchNum = b >= BHandleMAX ? 255 : b;
       }
 
-      int? PNum = PNumGet(e.Data, usbcom.DevType);
+      int? PNum = PNumGet(e.Data, Usbcom.DevType);
       if (PNum != null)
       {
         int p = (int)PNum;
@@ -112,7 +116,7 @@ namespace TR.BIDSsvMOD.dgoCtrlUSB
       }
 
       bool[] keyState = Common.Ctrl_Key;
-      CtrlerKeys cKeys = KeyStateGet(e.Data, usbcom.DevType);
+      CtrlerKeys cKeys = KeyStateGet(e.Data, Usbcom.DevType);
 
       keyState[0] = cKeys.Horn | cKeys.A;//Horn SW
       keyState[1] = cKeys.APlus;
@@ -134,7 +138,7 @@ namespace TR.BIDSsvMOD.dgoCtrlUSB
       else if(cKeys.Down)
         RNum = RNum == -1 ? 0 : -1;
 
-      RNum = RNumGet(e.Data, usbcom.DevType) ?? RNum;
+      RNum = RNumGet(e.Data, Usbcom.DevType) ?? RNum;
 
       if (RNum != rrec)
         Common.ReverserNum = RNum;
@@ -142,15 +146,15 @@ namespace TR.BIDSsvMOD.dgoCtrlUSB
       Common.Ctrl_Key = keyState;
     }
 
-    private int? PNumGet(in byte[] ba, usbcom.DeviceNameList devType)
+    private int? PNumGet(in byte[] ba, Usbcom.DeviceNameList devType)
     {
       int hdp = ba[0] & 0b00001111;
       switch (devType)
       {
-        case usbcom.DeviceNameList.shinkansen:
+        case Usbcom.DeviceNameList.shinkansen:
           if (ba[1] == 0xff) return null;
           return (int)Math.Round(ba[1] / 18.0, MidpointRounding.AwayFromZero) - 1;
-        case usbcom.DeviceNameList.type2:
+        case Usbcom.DeviceNameList.type2:
           if (ba[1] == 0xff) return null;
           switch (ba[1])
           {
@@ -162,26 +166,26 @@ namespace TR.BIDSsvMOD.dgoCtrlUSB
             case 0x00: return 5;
             default: return null;
           }
-        case usbcom.DeviceNameList.ryojo:
+        case Usbcom.DeviceNameList.ryojo:
           break;
-        case usbcom.DeviceNameList.mtc_p5b8:
+        case Usbcom.DeviceNameList.mtc_p5b8:
           if (hdp <= BHandleMAX) return 0;
           return hdp - BHandleMAX - 1;
-        case usbcom.DeviceNameList.mtc_p5b6:
+        case Usbcom.DeviceNameList.mtc_p5b6:
           if (hdp <= BHandleMAX) return 0;
           return hdp - BHandleMAX - 1;
       }
       return 0;
     }
-    private int? BNumGet(in byte[] ba, usbcom.DeviceNameList devType)
+    private int? BNumGet(in byte[] ba, Usbcom.DeviceNameList devType)
     {
       int hdp = ba[0] & 0b00001111;
       switch (devType)
       {
-        case usbcom.DeviceNameList.shinkansen:
+        case Usbcom.DeviceNameList.shinkansen:
           if (ba[0] == 0xff) return null;
           else return (int)Math.Round(ba[0] / 28.0, MidpointRounding.AwayFromZero) - 1;
-        case usbcom.DeviceNameList.type2:
+        case Usbcom.DeviceNameList.type2:
           if (ba[1] == 0xff) return null;
           switch (ba[0])
           {
@@ -197,30 +201,30 @@ namespace TR.BIDSsvMOD.dgoCtrlUSB
             case 0x79: return 0;
             default: return null;
           }
-        case usbcom.DeviceNameList.ryojo:
+        case Usbcom.DeviceNameList.ryojo:
           break;
-        case usbcom.DeviceNameList.mtc_p5b8:
+        case Usbcom.DeviceNameList.mtc_p5b8:
           if (hdp > BHandleMAX) return 0;
           return BHandleMAX - hdp + 1;
-        case usbcom.DeviceNameList.mtc_p5b6:
+        case Usbcom.DeviceNameList.mtc_p5b6:
           if (hdp > BHandleMAX) return 0;
           return BHandleMAX - hdp + 1;
       }
       return 99;
     }
-    private int? RNumGet(in byte[] ba, usbcom.DeviceNameList devType)
+    private int? RNumGet(in byte[] ba, Usbcom.DeviceNameList devType)
     {
       switch (devType)
       {
-        case usbcom.DeviceNameList.mtc_p5b8:
+        case Usbcom.DeviceNameList.mtc_p5b8:
           if ((ba[0] & 0b10000000) != 0) return 1;
           if ((ba[0] & 0b01000000) != 0) return -1;
           return 0;
-        case usbcom.DeviceNameList.mtc_p4b8:
+        case Usbcom.DeviceNameList.mtc_p4b8:
           if ((ba[0] & 0b10000000) != 0) return 1;
           if ((ba[0] & 0b01000000) != 0) return -1;
           return 0;
-        case usbcom.DeviceNameList.mtc_p5b6:
+        case Usbcom.DeviceNameList.mtc_p5b6:
           if ((ba[0] & 0b00100000) != 0) return 1;
           if ((ba[0] & 0b00010000) != 0) return -1;
           return 0;
@@ -228,19 +232,19 @@ namespace TR.BIDSsvMOD.dgoCtrlUSB
       return null;
     }
 
-    private CtrlerKeys KeyStateGet(in byte[] ba,usbcom.DeviceNameList devType)
+    private CtrlerKeys KeyStateGet(in byte[] ba,Usbcom.DeviceNameList devType)
     {
       switch (devType)
       {
-        case usbcom.DeviceNameList.shinkansen:
+        case Usbcom.DeviceNameList.shinkansen:
           return DGoKeyStateGet(ba);
-        case usbcom.DeviceNameList.type2:
+        case Usbcom.DeviceNameList.type2:
           return DGoKeyStateGet(ba);
-        case usbcom.DeviceNameList.ryojo:
+        case Usbcom.DeviceNameList.ryojo:
           return DGoKeyStateGet(ba);
-        case usbcom.DeviceNameList.mtc_p5b8:
+        case Usbcom.DeviceNameList.mtc_p5b8:
           return MTCKeyStateGet(ba);
-        case usbcom.DeviceNameList.mtc_p5b6:
+        case Usbcom.DeviceNameList.mtc_p5b6:
           return MTCKeyStateGet(ba);
       }
       return default;
@@ -334,8 +338,8 @@ namespace TR.BIDSsvMOD.dgoCtrlUSB
 
     public void Dispose()
     {
-      usbcom.DataGot -= Usbcom_DataGot;
-      usbcom.Close();
+      Usbcom.DataGot -= Usbcom_DataGot;
+      Usbcom.Close();
     }
 
     const double SPLEDSpdCount = 350 / 0x17;
@@ -347,7 +351,8 @@ namespace TR.BIDSsvMOD.dgoCtrlUSB
 
     public void OnBSMDChanged(in BIDSSharedMemoryData data)
     {
-      if (doesHaveLamp(usbcom.DevType))
+      if (PCap) return;
+      if (doesHaveLamp(Usbcom.DevType))
       {
         LEDBar = (byte)Math.Ceiling(Math.Abs(data.StateData.V / SPLEDSpdCount));
         CurrentSPD = (short)Math.Ceiling(Math.Abs(data.StateData.V));
@@ -358,13 +363,13 @@ namespace TR.BIDSsvMOD.dgoCtrlUSB
       }
     }
 
-    private bool doesHaveLamp(usbcom.DeviceNameList dn)
+    private bool doesHaveLamp(Usbcom.DeviceNameList dn)
     {
       switch (dn)
       {
-        case usbcom.DeviceNameList.ryojo: return true;
-        case usbcom.DeviceNameList.shinkansen: return true;
-        case usbcom.DeviceNameList.type2: return true;
+        case Usbcom.DeviceNameList.ryojo: return true;
+        case Usbcom.DeviceNameList.shinkansen: return true;
+        case Usbcom.DeviceNameList.type2: return true;
         default: return false;
       }
     }
@@ -413,13 +418,14 @@ namespace TR.BIDSsvMOD.dgoCtrlUSB
         for (int i = 0; i < ba.Length; i++) s += ba[i].ToString() + " ";
         Console.WriteLine("{0} << {1}", Name, s);
       }
-      usbcom.SendCtrl(ba, true);
+      Usbcom.SendCtrl(ba, true);
     }
 
     public void OnOpenDChanged(in OpenD data) { }
 
     public void OnPanelDChanged(in int[] data) {
-      if (doesHaveLamp(usbcom.DevType) && ATCPnlInd != null && data?.Length > ATCPnlInd)
+      if (PCap) return;
+      if (doesHaveLamp(Usbcom.DevType) && ATCPnlInd != null && data?.Length > ATCPnlInd)
       {
         short atcspdRec = ATCSPD;
         ATCSPD = (short)(data[ATCPnlInd ?? 0] * MultiplNum);
@@ -440,6 +446,7 @@ namespace TR.BIDSsvMOD.dgoCtrlUSB
         " -m : (magnification) set the magnification number that multiply with ATC Panel value"+
         " -n : (name) set the name of this connection"+
         " -pbexc : (Power / Brake Exchange) Exchange roles of Power Handle and Brake Handle"+
+        " -pcap : Only do Packet Capture" +
         " -inv : (inverse) Inverse the Handle Position Counting");
     }
   }

@@ -9,7 +9,7 @@ namespace TR.BIDSsvMOD.dgoCtrlUSB
 {
   //Ref : https://www.ipentec.com/document/libusbdotnet-app-create
 
-  class usbcom
+  class Usbcom
   {
     static UsbDevice uDevice;
     //static UsbDeviceFinder uDevFinder = new UsbDeviceFinder(0x0AE4, 0x0005);
