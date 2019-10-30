@@ -15,8 +15,8 @@ namespace TR.BIDSsvMOD.dgoCtrlUSB
     //static UsbDeviceFinder uDevFinder = new UsbDeviceFinder(0x0AE4, 0x0005);
     static UsbDeviceFinder[] uDevFinder = new UsbDeviceFinder[8]
     {
-      new UsbDeviceFinder(0x0AE4, 0x0005),//Shinkansen
       new UsbDeviceFinder(0x0AE4, 0x0004),//type2
+      new UsbDeviceFinder(0x0AE4, 0x0005),//Shinkansen
       new UsbDeviceFinder(0x0AE4, 0x0006),//ryojo
       new UsbDeviceFinder(0x0AE4, 0x0101),//mtc_p5b8
       new UsbDeviceFinder(0x1C06, 0x77A7),//mtc_p5b6
@@ -28,7 +28,7 @@ namespace TR.BIDSsvMOD.dgoCtrlUSB
 
     public enum DeviceNameList
     {
-      None, shinkansen, type2, ryojo, mtc_p5b8, mtc_p5b6, mtc_p4b8, mtc_p4B8_tq, mtc_p13b8
+      None, type2, shinkansen, ryojo, mtc_p5b8, mtc_p5b6, mtc_p4b8, mtc_p4B8_tq, mtc_p13b8
     }
 
     static public DeviceNameList DevType { get; private set; } = DeviceNameList.None;
@@ -43,7 +43,7 @@ namespace TR.BIDSsvMOD.dgoCtrlUSB
           if (uDevice == null) continue;
           DevType = (DeviceNameList)i + 1;
         }
-
+        Console.WriteLine("Device was found.  DevType is {0} (VID : {1}, PID : {2})", DevType, uDevice.UsbRegistryInfo.Vid, uDevice.UsbRegistryInfo.Pid);
         IUsbDevice iuDev = uDevice as IUsbDevice;
         if (!ReferenceEquals(iuDev, null))
         {
