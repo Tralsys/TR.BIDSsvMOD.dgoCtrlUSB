@@ -39,9 +39,22 @@ namespace TR.BIDSsvMOD.dgoCtrlUSB
       {
         for(int i = 0; i < (int)DeviceNameList.mtc_p5b6; i++)
         {
-          uDevice = UsbDevice.OpenUsbDevice(uDevFinder[i]);
+          try
+          {
+            uDevice = UsbDevice.OpenUsbDevice(uDevFinder[i]);
+          }catch(Exception e)
+          {
+            Console.WriteLine("usbcom Opening Process : {0}", e);
+            throw;
+          }
           if (uDevice == null) continue;
           DevType = (DeviceNameList)i + 1;
+          break;
+        }
+        if(uDevice == null)
+        {
+          Console.WriteLine("Usb Finding Process : Device not found.");
+          return;
         }
         Console.WriteLine("Device was found.  DevType is {0} (VID : {1}, PID : {2})", DevType, uDevice.UsbRegistryInfo.Vid, uDevice.UsbRegistryInfo.Pid);
         IUsbDevice iuDev = uDevice as IUsbDevice;
@@ -50,12 +63,12 @@ namespace TR.BIDSsvMOD.dgoCtrlUSB
           iuDev.SetConfiguration(1);
           iuDev.ClaimInterface(0);
         }
-        uDevice.Open();
+        uDevice?.Open();
         
       }
       catch(Exception e)
       {
-        Console.WriteLine("usbcom Connecting Proces : {0}", e);
+        Console.WriteLine("usbcom Connecting Process : {0}", e);
         throw;
       }
       (new Thread(() => {
@@ -95,7 +108,7 @@ namespace TR.BIDSsvMOD.dgoCtrlUSB
 
     public static void Close()
     {
-      uDevice.Close();
+      uDevice?.Close();
     }
   }
 }
