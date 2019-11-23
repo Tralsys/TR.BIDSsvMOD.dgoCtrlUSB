@@ -6,13 +6,13 @@ namespace TR.BIDSsvMOD.dgoCtrlUSB
 {
   public class Main : IBIDSsv
   {
-    public int Version => 101;
+    public int Version => 102;
     public string Name { get; set; } = "dgoc2bids";
     public bool IsDebug { get; set; } = false;
 
     int PHandleMAX = 13;
     int CarBMax = 9;
-    int CarPMax = 9;
+    int CarPMax = 5;
     int BHandleMAX = 8;
 
     int? ATCPnlInd = null;
@@ -20,11 +20,13 @@ namespace TR.BIDSsvMOD.dgoCtrlUSB
     bool isPBExc = false;
     bool isInv = false;
     bool PCap = false;
+    int?[] BTIndex = new int?[13];
     public bool Connect(in string args)
     {
-      string[] sa = args.Replace(" ", string.Empty).Split(new string[2] { "-", "/" }, StringSplitOptions.RemoveEmptyEntries);
+      string[] sa = args.Replace(" ", string.Empty).ToLower().Split(new string[2] { "-", "/" }, StringSplitOptions.RemoveEmptyEntries);
       if (sa.Length > 1)
       {
+        for (int i = 0; i < BTIndex.Length; i++) BTIndex[i] = null;
         for (int i = 1; i < sa.Length; i++)
         {
           string[] saa = sa[i].Split(':');
@@ -51,6 +53,56 @@ namespace TR.BIDSsvMOD.dgoCtrlUSB
                   break;
                 case "pcap":
                   PCap = true;
+                  break;
+                default:
+                  if (saa[0].StartsWith("bt") && saa.Length == 2)
+                  {
+                    string btN = saa[0].Remove(0, 2);
+                    int btNAss = int.Parse(saa[1]);
+                    if (btNAss >= Common.Ctrl_Key.Length) continue;
+                    switch (btN)
+                    {
+                      case "start":
+                        BTIndex[(int)CtrlerKeysEN.Start] = btNAss;
+                        break;
+                      case "select":
+                        BTIndex[(int)CtrlerKeysEN.Select] = btNAss;
+                        break;
+                      case "s":
+                        BTIndex[(int)CtrlerKeysEN.S] = btNAss;
+                        break;
+                      case "a":
+                        BTIndex[(int)CtrlerKeysEN.A] = btNAss;
+                        break;
+                      case "aplus":
+                        BTIndex[(int)CtrlerKeysEN.APlus] = btNAss;
+                        break;
+                      case "b":
+                        BTIndex[(int)CtrlerKeysEN.B] = btNAss;
+                        break;
+                      case "c":
+                        BTIndex[(int)CtrlerKeysEN.C] = btNAss;
+                        break;
+                      case "d":
+                        BTIndex[(int)CtrlerKeysEN.D] = btNAss;
+                        break;
+                      case "up":
+                        BTIndex[(int)CtrlerKeysEN.Up] = btNAss;
+                        break;
+                      case "right":
+                        BTIndex[(int)CtrlerKeysEN.Right] = btNAss;
+                        break;
+                      case "down":
+                        BTIndex[(int)CtrlerKeysEN.Down] = btNAss;
+                        break;
+                      case "left":
+                        BTIndex[(int)CtrlerKeysEN.Left] = btNAss;
+                        break;
+                      case "horn":
+                        BTIndex[(int)CtrlerKeysEN.Horn] = btNAss;
+                        break;
+                    }
+                  }
                   break;
               }
             }
@@ -122,6 +174,7 @@ namespace TR.BIDSsvMOD.dgoCtrlUSB
       bool[] keyState = Common.Ctrl_Key;
       CtrlerKeys cKeys = KeyStateGet(e.Data, Usbcom.DevType);
 
+      /*
       keyState[0] = cKeys.Horn | cKeys.C;//Horn SW
       keyState[1] = cKeys.APlus;
       keyState[4] = cKeys.S;//S Space
@@ -132,6 +185,55 @@ namespace TR.BIDSsvMOD.dgoCtrlUSB
       keyState[9] = cKeys.Right;//C1 PUp
       keyState[10] = cKeys.Left;//C2 PDwn
       keyState[11] = cKeys.D;//D D2
+      */
+
+      for(int i = 0; i < BTIndex.Length; i++)
+      {
+        if (BTIndex[i] == null) continue;
+        int bti = BTIndex[i] ?? 0;
+        switch ((CtrlerKeysEN)i)
+        {
+          case CtrlerKeysEN.A:
+            keyState[bti] = cKeys.A;
+            break;
+          case CtrlerKeysEN.APlus:
+            keyState[bti] = cKeys.APlus;
+            break;
+          case CtrlerKeysEN.B:
+            keyState[bti] = cKeys.B;
+            break;
+          case CtrlerKeysEN.C:
+            keyState[bti] = cKeys.C;
+            break;
+          case CtrlerKeysEN.D:
+            keyState[bti] = cKeys.D;
+            break;
+          case CtrlerKeysEN.Down:
+            keyState[bti] = cKeys.Down;
+            break;
+          case CtrlerKeysEN.Horn:
+            keyState[bti] = cKeys.Horn;
+            break;
+          case CtrlerKeysEN.Left:
+            keyState[bti] = cKeys.Left;
+            break;
+          case CtrlerKeysEN.Right:
+            keyState[bti] = cKeys.Right;
+            break;
+          case CtrlerKeysEN.S:
+            keyState[bti] = cKeys.S;
+            break;
+          case CtrlerKeysEN.Select:
+            keyState[bti] = cKeys.Select;
+            break;
+          case CtrlerKeysEN.Start:
+            keyState[bti] = cKeys.Start;
+            break;
+          case CtrlerKeysEN.Up:
+            keyState[bti] = cKeys.Up;
+            break;
+        }
+      }
 
       int RNum = Common.ReverserNum;
       int rrec = RNum;
@@ -346,6 +448,22 @@ namespace TR.BIDSsvMOD.dgoCtrlUSB
       return cKeys;
     }
 
+    public enum CtrlerKeysEN
+    {
+      Start,
+      Select,
+      S,
+      A,
+      APlus,
+      B,
+      C,
+      D,
+      Up,
+      Right,
+      Down,
+      Left,
+      Horn
+    }
     public struct CtrlerKeys
     {
       public bool Start;
@@ -477,7 +595,8 @@ namespace TR.BIDSsvMOD.dgoCtrlUSB
     {
       Console.WriteLine("communicate with dgocon\n" +
         " -a : (atc) set the atc panel number (default : null)" +
-        " -m : (magnification) set the magnification number that multiply with ATC Panel value"+
+        " -btXXX : (brake) assign the work to button (default : null)(XXX:start, select etc)" +
+        " -m : (magnification) set the magnification number that multiply with ATC Panel value" +
         " -n : (name) set the name of this connection"+
         " -pbexc : (Power / Brake Exchange) Exchange roles of Power Handle and Brake Handle"+
         " -pcap : Only do Packet Capture" +
