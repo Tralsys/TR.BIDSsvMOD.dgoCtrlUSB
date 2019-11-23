@@ -13,11 +13,12 @@ namespace TR.BIDSsvMOD.dgoCtrlUSB
   {
     static UsbDevice uDevice;
     //static UsbDeviceFinder uDevFinder = new UsbDeviceFinder(0x0AE4, 0x0005);
-    static UsbDeviceFinder[] uDevFinder = new UsbDeviceFinder[8]
+    static UsbDeviceFinder[] uDevFinder = new UsbDeviceFinder[]
     {
       new UsbDeviceFinder(0x0AE4, 0x0004),//type2
       new UsbDeviceFinder(0x0AE4, 0x0005),//Shinkansen
       new UsbDeviceFinder(0x0AE4, 0x0007),//ryojo
+      new UsbDeviceFinder(0x0AE4, 0x0008),//ryojo_unbalance
       new UsbDeviceFinder(0x0AE4, 0x0101),//mtc_p5b8
       new UsbDeviceFinder(0x1C06, 0x77A7),//mtc_p5b6
       new UsbDeviceFinder(0x0000, 0x0000),//mtc_p4b8
@@ -28,7 +29,7 @@ namespace TR.BIDSsvMOD.dgoCtrlUSB
 
     public enum DeviceNameList
     {
-      None, type2, shinkansen, ryojo, mtc_p5b8, mtc_p5b6, mtc_p4b8, mtc_p4B8_tq, mtc_p13b8
+      None, type2, shinkansen, ryojo, ryojo_ub, mtc_p5b8, mtc_p5b6, mtc_p4b8, mtc_p4B8_tq, mtc_p13b8
     }
 
     static public DeviceNameList DevType { get; private set; } = DeviceNameList.None;
@@ -74,13 +75,17 @@ namespace TR.BIDSsvMOD.dgoCtrlUSB
       (new Thread(() => {
         while (uDevice.IsOpen)
         {
-          byte[] buf = new byte[64];
+          byte[] buf = new byte[8];
           int bytesRead = 0;
 
           using (var Reader = uDevice.OpenEndpointReader(ReadEndpointID.Ep01))
           {
             ErrorCode ec = ErrorCode.None;
-            ec = Reader.Read(buf, 2000, out bytesRead);
+            try
+            {
+              ec = Reader.Read(buf, 2000, out bytesRead);
+            }
+            catch (ObjectDisposedException) { return; }
 
             if (ec == ErrorCode.IoTimedOut) continue;
             if (ec == ErrorCode.IoCancelled) return;
@@ -96,7 +101,11 @@ namespace TR.BIDSsvMOD.dgoCtrlUSB
     {
       int transfered = 0;
       var usp = new UsbSetupPacket(0x40, 0x09, 0x0301, 0x0000, 8);
-      uDevice.ControlTransfer(ref usp, Data, 8, out transfered);
+      try
+      {
+        if (uDevice?.IsOpen == true) uDevice.ControlTransfer(ref usp, Data, 8, out transfered);
+      }
+      catch (ObjectDisposedException) { return; }
     }
 
     public class DataGotEvArgs : EventArgs
@@ -108,7 +117,7 @@ namespace TR.BIDSsvMOD.dgoCtrlUSB
 
     public static void Close()
     {
-      uDevice?.Close();
+      if (uDevice?.IsOpen == true) uDevice?.Close();
     }
   }
 }
