@@ -14,9 +14,10 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Reference Include="LibUsbDotNet">
-      <HintPath>..\..\..\..\..\..\Program Files\LibUsbDotNet\LibUsbDotNet.dll</HintPath>
-    </Reference>
+    <PackageReference Include="LibUsbDotNet" Version="2.2.29" />
+  </ItemGroup>
+
+  <ItemGroup>
     <Reference Include="TR.BIDSSMemLib.structs">
       <HintPath>..\..\BIDS_Server\IBIDSsv\bin\Debug\netstandard2.0\TR.BIDSSMemLib.structs.dll</HintPath>
     </Reference>
