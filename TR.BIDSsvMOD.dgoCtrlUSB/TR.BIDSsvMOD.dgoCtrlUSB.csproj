@@ -18,15 +18,10 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Reference Include="TR.BIDSSMemLib.structs">
-      <HintPath>..\..\BIDS_Server\IBIDSsv\bin\Debug\netstandard2.0\TR.BIDSSMemLib.structs.dll</HintPath>
-    </Reference>
-    <Reference Include="TR.BIDSsv">
-      <HintPath>..\..\BIDS_Server\BIDSsv\bin\Debug\netstandard2.0\TR.BIDSsv.dll</HintPath>
-    </Reference>
-    <Reference Include="TR.IBIDSsv">
-      <HintPath>..\..\BIDS_Server\IBIDSsv\bin\Debug\netstandard2.0\TR.IBIDSsv.dll</HintPath>
-    </Reference>
+    <ProjectReference Include="..\..\BIDSSMemLib\BIDSSMemLib.structs\BIDSSMemLib.structs.csproj" />
+    <ProjectReference Include="..\..\BIDS_Server\BIDSsv\BIDSsv.csproj" />
+    <ProjectReference Include="..\..\BIDS_Server\IBIDSsv\IBIDSsv.csproj" />
+    <ProjectReference Include="..\..\IAtsPI\IAtsPI.csproj" />
   </ItemGroup>
 
 </Project>
