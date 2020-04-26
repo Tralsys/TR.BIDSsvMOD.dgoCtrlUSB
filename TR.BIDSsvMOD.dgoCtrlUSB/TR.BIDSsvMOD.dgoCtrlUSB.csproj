@@ -8,23 +8,20 @@
     <Description>communication with D-GO Controller</Description>
     <Copyright>Copyright 2019 Tetsu Otter</Copyright>
     <AssemblyName>TR.BIDSsvMOD.dgoctrlusb</AssemblyName>
-    <AssemblyVersion>1.0.0.2</AssemblyVersion>
-    <FileVersion>1.0.0.2</FileVersion>
+    <AssemblyVersion>1.0.2.0</AssemblyVersion>
+    <FileVersion>1.0.2.0</FileVersion>
+    <Version>1.0.2</Version>
   </PropertyGroup>
 
   <ItemGroup>
-    <Reference Include="LibUsbDotNet">
-      <HintPath>..\..\..\..\..\..\Program Files\LibUsbDotNet\LibUsbDotNet.dll</HintPath>
-    </Reference>
-    <Reference Include="TR.BIDSSMemLib.structs">
-      <HintPath>..\..\BIDS_Server\IBIDSsv\bin\Debug\netstandard2.0\TR.BIDSSMemLib.structs.dll</HintPath>
-    </Reference>
-    <Reference Include="TR.BIDSsv">
-      <HintPath>..\..\BIDS_Server\BIDSsv\bin\Debug\netstandard2.0\TR.BIDSsv.dll</HintPath>
-    </Reference>
-    <Reference Include="TR.IBIDSsv">
-      <HintPath>..\..\BIDS_Server\IBIDSsv\bin\Debug\netstandard2.0\TR.IBIDSsv.dll</HintPath>
-    </Reference>
+    <PackageReference Include="LibUsbDotNet" Version="2.2.29" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\BIDSSMemLib\BIDSSMemLib.structs\BIDSSMemLib.structs.csproj" />
+    <ProjectReference Include="..\..\BIDS_Server\BIDSsv\BIDSsv.csproj" />
+    <ProjectReference Include="..\..\BIDS_Server\IBIDSsv\IBIDSsv.csproj" />
+    <ProjectReference Include="..\..\IAtsPI\IAtsPI.csproj" />
   </ItemGroup>
 
 </Project>
