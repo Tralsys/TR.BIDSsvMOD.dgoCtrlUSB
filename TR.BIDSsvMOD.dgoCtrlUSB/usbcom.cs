@@ -1,7 +1,7 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Text;
 using System.Threading;
+using System.Threading.Tasks;
+
 using LibUsbDotNet;
 using LibUsbDotNet.Main;
 
@@ -40,7 +40,7 @@ namespace TR.BIDSsvMOD.dgoCtrlUSB
         Console.WriteLine("usbcom Connecting Proces : {0}", e);
         throw;
       }
-      (new Thread(() => {
+      Task.Run(() => {
         while (uDevice.IsOpen)
         {
           byte[] buf = new byte[64];
@@ -56,9 +56,9 @@ namespace TR.BIDSsvMOD.dgoCtrlUSB
             if (ec != 0) throw new Exception("usbcom ReadCtrl Error : ErrorCode==" + ec.ToString() + "\n" + UsbDevice.LastErrorString);
           }
 
-          if (bytesRead > 0) (new Thread(() => DataGot?.Invoke(null, new DataGotEvArgs() { Data = buf }))).Start();
+          if (bytesRead > 0)Task.Run(() => DataGot?.Invoke(null, new DataGotEvArgs() { Data = buf }));
         }
-      })).Start();
+      });
     }
 
     public static void SendCtrl(byte[] Data, bool RawMode = false)
