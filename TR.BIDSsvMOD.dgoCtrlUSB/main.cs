@@ -1,16 +1,17 @@
 ﻿using System;
-using TR.BIDSSMemLib;
 using TR.BIDSsv;
 
 namespace TR.BIDSsvMOD.dgoCtrlUSB
 {
   public class main : IBIDSsv
   {
-    public int Version => 100;
+    public int Version { get; set; }
     public string Name { get; set; } = "dgoc2bids";
     public bool IsDebug { get; set; } = false;
+		public bool IsDisposed { get; private set; }
+    private bool ConnectCalled { get; set; }
 
-    const int PHandleMAX = 13;
+		const int PHandleMAX = 13;
     const int BHandleMAX = 8;
 
     int? ATCPnlInd = null;
@@ -20,6 +21,8 @@ namespace TR.BIDSsvMOD.dgoCtrlUSB
 
     public bool Connect(in string args)
     {
+      if (ConnectCalled) return true;
+
       string[] sa = args.Replace(" ", string.Empty).Split(new string[2] { "-", "/" }, StringSplitOptions.RemoveEmptyEntries);
       if (sa.Length > 1)
       {
@@ -54,9 +57,16 @@ namespace TR.BIDSsvMOD.dgoCtrlUSB
         }
       }
 
-      
-      usbcom.Connect(usbcom.DeviceNameList.TCPP20011);
-      usbcom.DataGot += Usbcom_DataGot;
+      try
+      {
+        usbcom.Connect(usbcom.DeviceNameList.TCPP20011);
+        usbcom.DataGot += Usbcom_DataGot;
+      }catch(Exception e)
+			{
+        Console.WriteLine("{0}.Connect process : {1}", Name, e);
+        return false;
+			}
+      ConnectCalled = true;
       return true;
     }
 
@@ -117,8 +127,10 @@ namespace TR.BIDSsvMOD.dgoCtrlUSB
 
     public void Dispose()
     {
+      if (!ConnectCalled) return;
       usbcom.DataGot -= Usbcom_DataGot;
       usbcom.Close();
+      IsDisposed = true;
     }
 
     const double SPLEDSpdCount = 350 / 0x17;
@@ -187,14 +199,19 @@ namespace TR.BIDSsvMOD.dgoCtrlUSB
     public void Print(in string data) { }
     public void Print(in byte[] data) { }
 
+    static readonly string[] HelpMsg =
+    {
+      "communicate with dgocon",
+      " -a : (atc) set the atc panel number (default : null)",
+      " -m : (magnification) set the magnification number that multiply with ATC Panel value",
+      " -n : (name) set the name of this connection",
+      " -pbexc : (Power / Brake Exchange) Exchange roles of Power Handle and Brake Handle",
+      " -inv : (inverse) Inverse the Handle Position Counting"
+    };
     public void WriteHelp(in string args)
     {
-      Console.WriteLine("communicate with dgocon\n" +
-        " -a : (atc) set the atc panel number (default : null)" +
-        " -m : (magnification) set the magnification number that multiply with ATC Panel value"+
-        " -n : (name) set the name of this connection"+
-        " -pbexc : (Power / Brake Exchange) Exchange roles of Power Handle and Brake Handle"+
-        " -inv : (inverse) Inverse the Handle Position Counting");
+      for (int i = 0; i < HelpMsg.Length; i++)
+        Console.WriteLine(HelpMsg[i]);
     }
   }
 }
