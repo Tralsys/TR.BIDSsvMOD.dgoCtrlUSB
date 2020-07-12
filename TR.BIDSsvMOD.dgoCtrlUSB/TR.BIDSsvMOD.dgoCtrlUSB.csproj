@@ -5,25 +5,28 @@
     <Authors>Tetsu Otter</Authors>
     <Company>Tech Otter</Company>
     <Product>BIDS Server mod</Product>
-    <Description>communication with D-GO Controller</Description>
-    <Copyright>Copyright 2019 Tetsu Otter</Copyright>
+    <Description>communication with D-GO Controller (sv-v012)</Description>
+    <Copyright>Copyright 2020 Tetsu Otter</Copyright>
     <AssemblyName>TR.BIDSsvMOD.dgoctrlusb</AssemblyName>
-    <AssemblyVersion>1.0.0.2</AssemblyVersion>
-    <FileVersion>1.0.0.2</FileVersion>
+    <AssemblyVersion>1.0.0.3</AssemblyVersion>
+    <FileVersion>1.0.0.3</FileVersion>
   </PropertyGroup>
 
   <ItemGroup>
+    <Reference Include="IAtsPI">
+      <HintPath>bin\ref\IAtsPI.dll</HintPath>
+    </Reference>
     <Reference Include="LibUsbDotNet">
-      <HintPath>..\..\..\..\..\..\Program Files\LibUsbDotNet\LibUsbDotNet.dll</HintPath>
+      <HintPath>C:\Program Files\LibUsbDotNet\LibUsbDotNet.dll</HintPath>
     </Reference>
     <Reference Include="TR.BIDSSMemLib.structs">
-      <HintPath>..\..\BIDS_Server\IBIDSsv\bin\Debug\netstandard2.0\TR.BIDSSMemLib.structs.dll</HintPath>
+      <HintPath>bin\ref\TR.BIDSSMemLib.structs.dll</HintPath>
     </Reference>
     <Reference Include="TR.BIDSsv">
-      <HintPath>..\..\BIDS_Server\BIDSsv\bin\Debug\netstandard2.0\TR.BIDSsv.dll</HintPath>
+      <HintPath>bin\ref\TR.BIDSsv.dll</HintPath>
     </Reference>
     <Reference Include="TR.IBIDSsv">
-      <HintPath>..\..\BIDS_Server\IBIDSsv\bin\Debug\netstandard2.0\TR.IBIDSsv.dll</HintPath>
+      <HintPath>bin\ref\TR.IBIDSsv.dll</HintPath>
     </Reference>
   </ItemGroup>
 
